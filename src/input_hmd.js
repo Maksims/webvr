@@ -5,7 +5,6 @@ pc.extend(pc.input, function () {
     * @param graphicsDevice The graphics device
     */
     var Hmd = function (graphicsDevice) {
-
         this._graphicsDevice = graphicsDevice;
         this._vrstate = null;
 
@@ -24,48 +23,38 @@ pc.extend(pc.input, function () {
         */
         initialize: function () {
             var self = this;
-            var p = null;
 
-            p = new pc.promise.Promise(function (resolve, reject) {
-                if (navigator.getVRDevices || navigator.mozGetVRDevices) {
-                    var enumerateVRDevices = function (devices) {
-                        var i, n;
-
-                        for(i = 0, n = devices.length; i < n; i++) {
-                            if (devices[i] instanceof HMDVRDevice) {
-                                self._device = devices[i];
-                            }
-                            if (devices[i] instanceof PositionSensorVRDevice) {
-                                self._sensor = devices[i];
-                                if(self._sensor.resetSensor) {
-                                    self._sensor.resetSensor();
-                                }
-                                if (self._sensor.zeroSensor) {
-                                    self._sensor.zeroSensor();
-                                }
-                            }
+            if (navigator.getVRDevices || navigator.mozGetVRDevices) {
+                var enumerateVRDevices = function (devices) {
+                    for(var i = 0; i < devices.length; i++) {
+                        if (devices[i] instanceof HMDVRDevice)
+                            self._device = devices[i];
+                            
+                        if (devices[i] instanceof PositionSensorVRDevice) {
+                            self._sensor = devices[i];
+                            if(self._sensor.resetSensor)
+                                self._sensor.resetSensor();
+                                
+                            if (self._sensor.zeroSensor)
+                                self._sensor.zeroSensor();
                         }
-
-                        if (!self._device || !self._sensor) {
-                            reject("No HMD or HMD position sensor");
-                        }
-
-                        self.loaded = true;
-                        resolve();
-                    };
-
-                    if (navigator.getVRDevices) {
-                        navigator.getVRDevices().then(enumerateVRDevices);
-                    } else if (navigator.mozGetVRDevices) {
-                        navigator.mozGetVRDevices(enumerateVRDevices);
                     }
 
-                } else {
-                    reject("No HMD found")
-                }
-            });
+                    if (!self._device || !self._sensor)
+                        return fn(new Error("No HMD or HMD position sensor"));
 
-            return p;
+                    self.loaded = true;
+                    fn(null);
+                };
+
+                if (navigator.getVRDevices) {
+                    navigator.getVRDevices().then(enumerateVRDevices);
+                } else if (navigator.mozGetVRDevices) {
+                    navigator.mozGetVRDevices(enumerateVRDevices);
+                }
+            } else {
+                fn(new Error("No HMD found"));
+            }
         },
 
         /**
@@ -73,9 +62,8 @@ pc.extend(pc.input, function () {
         * @description poll to get the state of any attached HMD devices. This should be called every frame.
         */
         poll: function () {
-            if (this._device && this._sensor) {
+            if (this._device && this._sensor)
                 this._vrstate = this._sensor.getState();
-            }
         },
 
         /**
@@ -96,10 +84,6 @@ pc.extend(pc.input, function () {
                     vrDisplay: this._device
                 });
             }
-        },
-
-        exitFullscreen: function () {
-
         }
     };
 
@@ -149,5 +133,5 @@ pc.extend(pc.input, function () {
 
     return {
         Hmd: Hmd
-    }
+    };
 }());
